@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#f7f8f6"><link rel="manifest" href="manifest.webmanifest"><title>유통기한 관리</title>
+<style>
+:root{--bg:#f7f8f6;--card:#fff;--ink:#202522;--muted:#7b847e;--line:#e8ece8;--green:#547b64;--pale:#eaf1eb;--red:#c65c55;--amber:#b98237}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font-family:system-ui,-apple-system,"Noto Sans KR",sans-serif}
+header{position:sticky;top:0;background:#f7f8f6ee;backdrop-filter:blur(12px);z-index:5;padding:18px 18px 12px;border-bottom:1px solid var(--line)}
+.head{max-width:760px;margin:auto;display:flex;justify-content:space-between;align-items:center}h1{font-size:21px;margin:0;font-weight:750;letter-spacing:-.7px}.sub{font-size:12px;color:var(--muted);margin-top:4px}
+main{max-width:760px;margin:auto;padding:16px 16px 100px}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin:5px 0 18px}.stat{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:13px 12px}.stat b{display:block;font-size:25px;letter-spacing:-1px}.stat span{font-size:12px;color:var(--muted)}.stat.red b{color:var(--red)}.stat.amber b{color:var(--amber)}
+.actions{display:flex;gap:8px;margin-bottom:14px}.btn{border:0;border-radius:12px;padding:11px 14px;font-weight:650;font-size:13px;background:var(--pale);color:var(--green);cursor:pointer}.btn.primary{background:var(--green);color:white}.btn.light{background:white;border:1px solid var(--line);color:var(--ink)}
+.controls{display:grid;grid-template-columns:1fr 130px;gap:8px;margin-bottom:10px}input,select,textarea{font:inherit;border:1px solid var(--line);background:white;border-radius:12px;padding:12px;color:var(--ink);width:100%;min-width:0}input:focus,select:focus,textarea:focus{outline:2px solid #c8d9cc;border-color:var(--green)}
+.filters{display:flex;gap:7px;overflow:auto;padding:2px 0 13px}.chip{white-space:nowrap;border:1px solid var(--line);background:white;color:var(--muted);padding:8px 12px;border-radius:99px;font-size:12px}.chip.active{background:var(--ink);border-color:var(--ink);color:white}
+.list{display:grid;gap:9px}.item{background:white;border:1px solid var(--line);border-radius:16px;padding:12px;display:flex;gap:12px;align-items:center}.photo{width:58px;height:58px;border-radius:12px;background:#f0f3f0;object-fit:cover;flex-shrink:0}.placeholder{display:grid;place-items:center;font-size:23px;color:#9aa59d}.info{min-width:0;flex:1}.name{font-weight:700;font-size:15px;overflow-wrap:anywhere}.meta{font-size:12px;color:var(--muted);margin-top:4px}.memo{font-size:12px;color:#657069;margin-top:5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.dday{font-weight:750;font-size:13px;white-space:nowrap;text-align:right}.dday small{display:block;font-weight:500;font-size:10px;color:var(--muted);margin-top:3px}.dday.expired{color:var(--red)}.dday.soon{color:var(--amber)}.empty{text-align:center;padding:48px 15px;color:var(--muted);background:white;border:1px dashed var(--line);border-radius:16px}.empty b{display:block;color:var(--ink);margin-bottom:6px}
+footer{position:fixed;bottom:0;left:0;right:0;background:#ffffffed;border-top:1px solid var(--line);padding:10px 16px calc(10px + env(safe-area-inset-bottom));display:flex;justify-content:center;z-index:5}.footerin{max-width:760px;width:100%;display:flex;justify-content:space-between;align-items:center;gap:8px}.tiny{font-size:11px;color:var(--muted)}
+dialog{border:0;border-radius:20px;padding:0;width:min(92vw,520px);max-height:90vh;box-shadow:0 20px 60px #18251d33}dialog::backdrop{background:#17201966}.modal{padding:20px;overflow:auto;max-height:90vh}.modal h2{margin:0 0 16px;font-size:19px}.field{margin:12px 0}.field label{display:block;font-size:12px;font-weight:650;color:#59635c;margin-bottom:6px}.two{display:grid;grid-template-columns:1fr 1fr;gap:10px}.modal-actions{display:flex;gap:8px;margin-top:18px}.modal-actions>*{flex:1}.danger{color:var(--red)!important;background:#fbefee!important}
+@media(max-width:390px){.stats{gap:6px}.stat{padding:11px 9px}.stat b{font-size:22px}.controls{grid-template-columns:1fr 112px}.photo{width:52px;height:52px}}
+</style></head>
+<body>
+<header><div class="head"><div><h1>유통기한 관리</h1><div class="sub">소중한 물건의 기한을 한눈에</div></div><button class="btn light" id="settingsBtn">백업 · 설정</button></div></header>
+<main>
+<section class="stats">
+ <div class="stat red"><b id="todayCount">0</b><span>오늘 만료</span></div>
+ <div class="stat amber"><b id="soonCount">0</b><span>7일 이내</span></div>
+ <div class="stat"><b id="totalCount">0</b><span>전체 항목</span></div>
+</section>
+<div class="actions"><button class="btn primary" id="addBtn">＋ 항목 추가</button><button class="btn light" id="notifyBtn">알림 설정</button></div>
+<div class="controls"><input id="search" placeholder="상품명 또는 메모 검색"><select id="sort"><option value="date">날짜 빠른순</option><option value="name">이름순</option><option value="new">최근 등록순</option></select></div>
+<div class="filters" id="filters"></div>
+<div class="list" id="list"></div>
+</main>
+<footer><div class="footerin"><span class="tiny">이 기기에 저장됩니다 · 정기적으로 백업하세요</span><button class="btn primary" id="quickAdd">＋ 등록</button></div></footer>
+<dialog id="editDialog"><form class="modal" id="itemForm">
+<h2 id="formTitle">항목 추가</h2><input type="hidden" id="itemId">
+<div class="field"><label>상품명 *</label><input id="name" required maxlength="80" placeholder="예: 플레인 요거트"></div>
+<div class="two"><div class="field"><label>카테고리</label><select id="category"><option>식품</option><option>음료</option><option>영양제·의약품</option><option>화장품</option><option>생활용품</option><option>반려동물</option><option>기타</option></select></div><div class="field"><label>수량</label><input id="qty" type="number" min="0" step="1" value="1"></div></div>
+<div class="two"><div class="field"><label>구매일</label><input id="purchase" type="date"></div><div class="field"><label>유통기한 *</label><input id="expiry" type="date" required></div></div>
+<div class="field"><label>보관 장소</label><input id="place" maxlength="60" placeholder="예: 냉장고, 주방 수납장"></div>
+<div class="field"><label>사진</label><input id="photo" type="file" accept="image/*"><div class="tiny" id="photoHint">사진은 백업 파일에도 포함됩니다.</div></div>
+<div class="field"><label>메모</label><textarea id="memo" rows="3" maxlength="500" placeholder="개봉일, 사용 방법 등"></textarea></div>
+<div class="modal-actions"><button type="button" class="btn light" id="cancelEdit">취소</button><button class="btn primary" type="submit">저장</button></div>
+</form></dialog>
+<dialog id="actionDialog"><div class="modal"><h2 id="actionTitle">항목 관리</h2><div class="modal-actions"><button class="btn light" id="actionCancel">취소</button><button class="btn" id="actionEdit">수정</button><button class="btn danger" id="actionDelete">삭제</button></div></div></dialog>
+<dialog id="settingsDialog"><div class="modal"><h2>백업 · 설정</h2>
+<p style="font-size:13px;color:#68736b;line-height:1.6">상품 정보와 사진을 하나의 백업 파일로 저장할 수 있어요. 새 휴대폰에서는 이 파일을 불러오세요.</p>
+<div class="field"><button class="btn primary" style="width:100%" id="exportBtn">↓ 전체 데이터 백업하기</button></div>
+<div class="field"><label>백업 파일 복원</label><input type="file" id="importFile" accept=".json,application/json"></div>
+<div class="field"><label>내 카테고리 관리</label><div style="display:flex;gap:7px"><input id="newCategory" maxlength="30" placeholder="새 카테고리 이름"><button class="btn" id="addCategory">추가</button></div><div id="categoryManageList" style="display:grid;gap:7px;margin-top:9px"></div></div>
+<div class="field"><button class="btn light" style="width:100%" id="notifySettings">알림 권한 설정</button></div>
+<div class="field"><button class="btn danger" style="width:100%" id="clearBtn">모든 데이터 삭제</button></div>
+<div class="modal-actions"><button class="btn light" id="closeSettings">닫기</button></div>
+<div class="tiny" id="backupInfo" style="margin-top:12px"></div></div></dialog>
+<script>
+const DB='expiry-manager-v1', STORE='items'; let db, items=[], active='전체', photoData=null, selectedItemId=null;
+const DEFAULT_CATEGORIES=['식품','음료','영양제·의약품','화장품','생활용품','반려동물','기타'];
+let categories=JSON.parse(localStorage.getItem('expiryCategories')||'null')||[...DEFAULT_CATEGORIES];
+function saveCategories(){localStorage.setItem('expiryCategories',JSON.stringify(categories));}
+const $=id=>document.getElementById(id);
+function openDB(){return new Promise((res,rej)=>{let r=indexedDB.open(DB,1);r.onupgradeneeded=()=>r.result.createObjectStore(STORE,{keyPath:'id'});r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)})}
+function all(){return new Promise((res,rej)=>{let r=db.transaction(STORE).objectStore(STORE).getAll();r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)})}
+function put(x){return new Promise((res,rej)=>{let r=db.transaction(STORE,'readwrite').objectStore(STORE).put(x);r.onsuccess=res;r.onerror=()=>rej(r.error)})}
+function del(id){return new Promise((res,rej)=>{let r=db.transaction(STORE,'readwrite').objectStore(STORE).delete(id);r.onsuccess=res;r.onerror=()=>rej(r.error)})}
+const today=()=>{let d=new Date();d.setHours(0,0,0,0);return d};
+function diff(date){let d=new Date(date+'T00:00:00');return Math.round((d-today())/86400000)}
+function status(x){let n=diff(x.expiry);return n<0?'만료':n===0?'오늘 만료':n<=7?'임박':'여유'}
+function dLabel(x){let n=diff(x.expiry);return n<0?`D+${Math.abs(n)}`:n===0?'D-DAY':`D-${n}`}
+function esc(s=''){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+const specialCats=['임박','오늘 만료','만료'];
+function render(){
+ $('todayCount').textContent=items.filter(x=>diff(x.expiry)===0).length;
+ $('soonCount').textContent=items.filter(x=>diff(x.expiry)>=1&&diff(x.expiry)<=7).length;
+ $('totalCount').textContent=items.length;
+ $('filters').innerHTML=['전체',...categories,...specialCats].map(c=>`<button class="chip ${active===c?'active':''}" data-cat="${esc(c)}">${esc(c)}</button>`).join('');
+ let q=$('search').value.trim().toLowerCase(), arr=items.filter(x=>(active==='전체'||(['임박','오늘 만료','만료'].includes(active)?status(x)===active:x.category===active))&&(!q||[x.name,x.memo,x.place,x.category].join(' ').toLowerCase().includes(q)));
+ let sort=$('sort').value;arr.sort((a,b)=>sort==='name'?a.name.localeCompare(b.name,'ko'):sort==='new'?(b.created||0)-(a.created||0):a.expiry.localeCompare(b.expiry));
+ $('list').innerHTML=arr.length?arr.map(x=>{let n=diff(x.expiry),cl=n<0||n===0?'expired':n<=7?'soon':'';return `<article class="item"><div class="photo ${x.photo?'':'placeholder'}">${x.photo?`<img class="photo" src="${x.photo}" alt="">`:'□'}</div><div class="info"><div class="name">${esc(x.name)}</div><div class="meta">${esc(x.category)} · 수량 ${esc(x.qty)}${x.place?' · '+esc(x.place):''}</div>${x.memo?`<div class="memo">${esc(x.memo)}</div>`:''}</div><div class="dday ${cl}">${dLabel(x)}<small>${esc(x.expiry)}</small><button class="btn light" style="padding:5px 8px;margin-top:6px" data-edit="${x.id}">관리</button></div></article>`}).join(''):'<div class="empty"><b>등록된 항목이 없어요</b>＋ 항목 추가를 눌러 첫 상품을 등록해 보세요.</div>';
+}
+function openForm(x){$('itemForm').reset();photoData=x?.photo||null;$('itemId').value=x?.id||'';$('formTitle').textContent=x?'항목 수정':'항목 추가';$('name').value=x?.name||'';$('category').innerHTML=categories.map(c=>`<option value="${esc(c)}">${esc(c)}</option>`).join('');$('category').value=categories.includes(x?.category)?x.category:(categories[0]||'기타');$('qty').value=x?.qty??1;$('purchase').value=x?.purchase||'';$('expiry').value=x?.expiry||'';$('place').value=x?.place||'';$('memo').value=x?.memo||'';$('photoHint').textContent=x?.photo?'기존 사진이 유지됩니다. 새 사진을 선택하면 교체돼요.':'사진은 백업 파일에도 포함됩니다.';$('editDialog').showModal()}
+function readFile(f){return new Promise((res,rej)=>{let r=new FileReader();r.onload=()=>res(r.result);r.onerror=rej;r.readAsDataURL(f)})}
+$('photo').addEventListener('change',async e=>{if(e.target.files[0]){if(e.target.files[0].size>8*1024*1024){alert('사진은 8MB 이하로 선택해 주세요.');e.target.value='';return}photoData=await readFile(e.target.files[0])}});
+$('itemForm').addEventListener('submit',async e=>{e.preventDefault();let id=$('itemId').value||crypto.randomUUID(), old=items.find(x=>x.id===id);let x={id,name:$('name').value.trim(),category:$('category').value,qty:Number($('qty').value||0),purchase:$('purchase').value,expiry:$('expiry').value,place:$('place').value.trim(),memo:$('memo').value.trim(),photo:photoData,created:old?.created||Date.now(),updated:Date.now()};await put(x);$('editDialog').close();await refresh()});
+async function refresh(){items=await all();render()}
+$('list').addEventListener('click',async e=>{let b=e.target.closest('[data-edit]');if(!b)return;let x=items.find(i=>i.id===b.dataset.edit);if(!x)return;selectedItemId=x.id;$('actionTitle').textContent=x.name;$('actionDialog').showModal()});
+$('actionCancel').onclick=()=>$('actionDialog').close();
+$('actionEdit').onclick=()=>{let x=items.find(i=>i.id===selectedItemId);$('actionDialog').close();if(x)openForm(x)};
+$('actionDelete').onclick=async()=>{if(confirm('이 항목을 삭제할까요?')){await del(selectedItemId);$('actionDialog').close();await refresh()}};
+function renderCategoryManager(){$('categoryManageList').innerHTML=categories.map((c,i)=>`<div style="display:flex;align-items:center;gap:7px;border:1px solid var(--line);border-radius:10px;padding:8px 9px;font-size:13px"><span style="color:var(--muted);min-width:18px">${i+1}</span><span style="flex:1;font-weight:600">${esc(c)}</span><button class="btn light" data-up="${i}" ${i===0?'disabled':''} aria-label="위로 이동" style="padding:6px 9px">↑</button><button class="btn light" data-down="${i}" ${i===categories.length-1?'disabled':''} aria-label="아래로 이동" style="padding:6px 9px">↓</button><button class="btn light" data-ren="${i}" style="padding:6px 9px">이름 변경</button><button class="btn danger" data-rm="${i}" style="padding:6px 9px">삭제</button></div>`).join('')||'<span class="tiny">카테고리가 없어요.</span>'}
+$('addCategory').onclick=()=>{let v=$('newCategory').value.trim();if(!v)return;if(['전체',...specialCats].includes(v)||categories.includes(v)){alert('이미 있거나 사용할 수 없는 이름이에요.');return}categories.push(v);saveCategories();$('newCategory').value='';$('category').innerHTML=categories.map(c=>`<option>${esc(c)}</option>`).join('');renderCategoryManager();render()};
+$('categoryManageList').addEventListener('click',e=>{let up=e.target.closest('[data-up]'),down=e.target.closest('[data-down]');if(up||down){let i=Number((up||down).dataset[up?'up':'down']),j=up?i-1:i+1;if(j>=0&&j<categories.length){[categories[i],categories[j]]=[categories[j],categories[i]];saveCategories();renderCategoryManager();$('category').innerHTML=categories.map(c=>`<option value="${esc(c)}">${esc(c)}</option>`).join('');render()}return}let r=e.target.closest('[data-ren]'),d=e.target.closest('[data-rm]');if(r){let i=Number(r.dataset.ren),old=categories[i],v=prompt('새 카테고리 이름',old);if(v&&v.trim()&&v.trim()!==old){v=v.trim();if(categories.includes(v)||['전체',...specialCats].includes(v)){alert('이미 사용 중인 이름이에요.');return}categories[i]=v;items.filter(x=>x.category===old).forEach(x=>x.category=v);Promise.all(items.map(put)).then(refresh);saveCategories();renderCategoryManager();$('category').innerHTML=categories.map(c=>`<option>${esc(c)}</option>`).join('');render()}}else if(d){let i=Number(d.dataset.rm),c=categories[i];if(items.some(x=>x.category===c)){alert('이 카테고리를 사용하는 항목이 있어 삭제할 수 없어요. 먼저 항목의 카테고리를 변경해 주세요.');return}if(confirm(`'${c}' 카테고리를 삭제할까요?`)){categories.splice(i,1);saveCategories();renderCategoryManager();$('category').innerHTML=categories.map(x=>`<option>${esc(x)}</option>`).join('');render()}}});
+$('filters').addEventListener('click',e=>{let b=e.target.closest('[data-cat]');if(b){active=b.dataset.cat;render()}});
+$('search').addEventListener('input',render);$('sort').addEventListener('change',render);
+$('addBtn').onclick=$('quickAdd').onclick=()=>openForm();$('cancelEdit').onclick=()=>$('editDialog').close();
+$('settingsBtn').onclick=()=>{$('backupInfo').textContent=`현재 ${items.length}개 항목 저장됨`;renderCategoryManager(); $('settingsDialog').showModal()};$('closeSettings').onclick=()=>$('settingsDialog').close();
+$('exportBtn').onclick=async()=>{let data={app:'expiry-manager',version:2,exportedAt:new Date().toISOString(),categories,items:await all()};let blob=new Blob([JSON.stringify(data)],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=`유통기한백업_${new Date().toISOString().slice(0,10)}.json`;a.click();URL.revokeObjectURL(url);$('backupInfo').textContent='백업 파일을 저장했어요.'};
+$('importFile').onchange=async e=>{let f=e.target.files[0];if(!f)return;try{let data=JSON.parse(await f.text());if(data.app!=='expiry-manager'||!Array.isArray(data.items))throw Error();if(!confirm(`${data.items.length}개 항목을 복원할까요? 기존 데이터는 백업 내용으로 교체됩니다.`))return;let tx=db.transaction(STORE,'readwrite'),s=tx.objectStore(STORE);s.clear();data.items.forEach(x=>s.put(x));if(Array.isArray(data.categories)){categories=data.categories;saveCategories()}tx.oncomplete=async()=>{await refresh();$('backupInfo').textContent='복원이 완료됐어요.';alert('복원 완료!')};}catch(err){alert('올바른 백업 파일이 아니에요.')}e.target.value=''};
+$('clearBtn').onclick=async()=>{if(confirm('모든 항목과 사진을 삭제할까요? 이 작업은 되돌릴 수 없어요.')){let tx=db.transaction(STORE,'readwrite');tx.objectStore(STORE).clear();tx.oncomplete=async()=>{await refresh();$('backupInfo').textContent='모든 데이터가 삭제됐어요.'}}};
+async function notifications(){if(!('Notification'in window)){alert('이 브라우저는 알림을 지원하지 않아요.');return}let p=await Notification.requestPermission();alert(p==='granted'?'알림 권한이 허용됐어요. 단, 브라우저가 열려 있을 때 확인 알림을 제공하는 방식입니다.':'알림 권한이 허용되지 않았어요.')}
+$('notifyBtn').onclick=notifications;$('notifySettings').onclick=notifications;
+async function init(){db=await openDB();await refresh();if('Notification'in window&&Notification.permission==='granted'){let due=items.filter(x=>diff(x.expiry)>=0&&diff(x.expiry)<=3);if(due.length&&sessionStorage.getItem('expiryNotice')!==new Date().toDateString()){new Notification('유통기한 확인',{body:`오늘부터 3일 이내 만료 항목 ${due.length}개가 있어요.`});sessionStorage.setItem('expiryNotice',new Date().toDateString())}}}
+if('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('./service-worker.js').catch(()=>{});
+init().catch(e=>{console.error(e);alert('저장소를 열 수 없어요. 최신 Chrome 브라우저에서 다시 실행해 주세요.')});
+</script></body></html>

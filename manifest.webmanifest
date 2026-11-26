@@ -1,0 +1,9 @@
+{
+  "name": "유통기한 관리",
+  "short_name": "유통기한",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#f7f8f6",
+  "theme_color": "#f7f8f6",
+  "lang": "ko"
+}
