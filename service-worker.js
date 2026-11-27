@@ -1,4 +1,4 @@
-const CACHE = 'expiry-manager-shell-v2';
+const CACHE = 'expiry-manager-shell-v3';
 const ASSETS = [
   './',
   './index.html',
